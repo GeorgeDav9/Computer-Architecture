@@ -1,76 +1,85 @@
 """CPU functionality."""
 
 import sys
-program_filename = sys.argv[0]
+# import re
 
-HLT = 0b00000001 
-LDI = 0b10000010
-PRN = 0b01000111
 
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        self.reg = [0] * 8
+        # Create 256 bytes of Ram, 8 registers, a counter, and continuous variable
+        # memory
         self.ram = [0] * 256
+        # registers
+        self.registers = [0] * 8
+        # continuous variable
         self.running = True
-        self.address = 0
+        # counter
         self.pc = 0
-        
 
-    def ram_read(self, MAR):
-        '''
-        accept address to read
-        returns value stored
-        '''
-        return self.ram[MAR]
+    def ram_read(self, address):
+        # Accepts the address and returns the value from ram
+        return(self.ram[address])
+    
 
-    def ram_write(self, MDR, MAR):
-        '''
-        accepts value to write
-        and address to write it to
-        '''
-        self.ram[MAR] = MDR
+    def ram_write(self, address, value):
+        # Accepts the address and value and assigns to ram
+        self.ram[address] = value
+
+
 
     def load(self):
         """Load a program into memory."""
-        with open(program_filename) as f:
-            for line in f:
-                line = line.split('#')
-                line = line[0].strip()
+        if len(sys.argv) < 2:
+            print("Insufficient arguments, re-evaluate and try again")
+            print("Usage: filename file_to_open")
 
-                if line == '':
-                    continue
+        address = 0
 
-            self.ram[self.address] = int(line, 2) # converts to base 2
+        try:
+            with open(sys.argv[1]) as file:
+                for line in file:
+                    comment_split = line.split('#')
+                    potential_num = comment_split[0]
 
-            self.address += 1
-        
+                    if potential_num == "":
+                        continue
+
+                    if potential_num[0] == "1" or potential_num[0] == "0":
+                        num = potential_num[:8]
+                        
+                        self.ram[address] = int(num, 2)
+                        address += 1
+                    
+        except FileNotFoundError:
+            print(f"{sys.argv[0]}: {sys.argv[1]} not found")
+            
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010, # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111, # PRN R0
+        #     0b00000000,
+        #     0b00000001, # HLT
+        # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
 
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+            self.registers[reg_a] += self.registers[reg_b]
+        
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -90,36 +99,42 @@ class CPU:
         ), end='')
 
         for i in range(8):
-            print(" %02X" % self.reg[i], end='')
+            print(" %02X" % self.registers[i], end='')
 
         print()
 
     def run(self):
         """Run the CPU."""
-        
+        LDI = 0b10000010
+        PRN = 0b01000111
+        HLT = 0b00000001
+        MUL = 0b10100010
+
         while self.running:
-            IR = self.ram_read(self.pc) # command, where pc is
-            operand_a = self.ram_read(self.pc + 1) #pc + 1
-            operand_b = self.ram_read(self.pc + 2) #pc + 
-            
-            #update program counter
-            #look at the first two bits of the instruction
-            
-            self.pc += 1 + (IR >> 6)
-            #get command
+            # the HLT instruction
 
+            if self.ram[self.pc] == HLT:
+                self.running == False
 
-            #conditional for HLT, LDI, PRN
+            # the LDI instruction
+            if self.ram[self.pc] == LDI:
+                num_to_load = self.ram[self.pc + 2]
+                reg_index = self.ram[self.pc + 1]
+                self.registers[reg_index] = num_to_load
+                self.pc += 3
 
-            if IR == HLT:
-                self.running = False
-                # could also use sys.exit()
+            # the PRN instruction
+            if self.ram[self.pc] == PRN:
+                reg_to_print = self.ram[self.pc +1]
+                print(self.registers[reg_to_print])
+                self.pc += 2
 
-            elif IR == LDI: #set register to a value
-                #what is the register number? - operand_a What is the value? - operand_b How do I set register? - change self.reg
-                
-                self.reg[operand_a] = [operand_b]
-
-            elif IR == PRN: #takes register number, prints out it's content
-                #where to get register number? operand_a How to get contents? from inside self.reg
-                print(self.reg[operand_a])
+            # the MUL instruction
+            if self.ram[self.pc] == MUL:
+                first_reg = self.ram[self.pc + 1]
+                sec_reg = self.ram[self.pc + 2]
+                first_factor = self.registers[first_reg]
+                sec_factor = self.registers[sec_reg]
+                product = first_factor * sec_factor
+                print(product)
+                self.pc += 3
