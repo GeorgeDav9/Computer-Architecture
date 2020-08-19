@@ -3,6 +3,7 @@
 """Main."""
 
 import sys
+import re
 from cpu import *
 
 cpu = CPU()
