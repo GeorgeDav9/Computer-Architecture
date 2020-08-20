@@ -113,6 +113,9 @@ class CPU:
         MUL = 0b10100010
         PUSH = 0b01000101
         POP = 0b01000110
+        CALL = 0b01010000
+        RET = 0b00010001
+        ADD =  0b10100000
 
         while self.running:
             # the HLT instruction
@@ -197,7 +200,7 @@ class CPU:
                 self.pc = addr_to_go_to
 
             # The RET instruction
-            
+
             if self.ram[self.pc] == RET:
                 # This is an instance of pop so don't decrement the SP
                 SP = self.registers[7]
