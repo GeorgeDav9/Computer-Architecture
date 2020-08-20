@@ -134,7 +134,7 @@ class CPU:
                 print(self.registers[reg_to_print])
                 self.pc += 2
 
-            # the MUL instruction
+             # the MUL instruction
 
             if self.ram[self.pc] == MUL:
                 first_reg = self.ram[self.pc + 1]
@@ -143,6 +143,14 @@ class CPU:
                 sec_factor = self.registers[sec_reg]
                 product = first_factor * sec_factor
                 print(product)
+                self.pc += 3
+
+            # The ADD instruction
+
+            if self.ram[self.pc] == ADD:
+                first_reg = self.ram[self.pc + 1]
+                sec_reg = self.ram[self.pc + 2]
+                self.alu('ADD', first_reg, sec_reg)
                 self.pc += 3
 
             # the PUSH instruction
@@ -172,6 +180,32 @@ class CPU:
                 self.registers[7] += 1
                 self.pc += 2
 
+            # The CALL instruction
 
+            if self.ram[self.pc] == CALL:
+                # Add the pushing & must decrement the SP
+                self.registers[7] -= 1
+                SP = self.registers[7]
+                # get the address of the next instruction for when subroutine is complete
+                addr_next_instruction = self.pc + 2
+                # then put that address on the stack
+                self.ram[SP] = addr_next_instruction
+                # then find the reg to call from and the address in that reg
+                reg_to_call = self.ram[self.pc + 1]
+                addr_to_go_to = self.registers[reg_to_call]
+                # and set the pc to that address
+                self.pc = addr_to_go_to
+
+            # The RET instruction
+            
+            if self.ram[self.pc] == RET:
+                # This is an instance of pop so don't decrement the SP
+                SP = self.registers[7]
+                # Get the address at the top of the stack
+                addr_to_pop = self.ram[SP]
+                # and set PC to that address
+                self.pc = addr_to_pop
+                # After pop then increment the SP
+                self.registers[7] += 1
     
             
